@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TgPredictBot": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
