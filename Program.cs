@@ -16,7 +16,7 @@ namespace TgPredictBot
 
         static async Task Main(string[] args)
         {
-            string botToken = "8380018080:AAEfT8pvW6kBl8QXdKo6T02ohqhh-dZ3SM4";
+            string botToken = "Insert your token";
 
             using (var db = new AppDbContext())
             {
