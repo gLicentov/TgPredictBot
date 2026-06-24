@@ -3,9 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using TgPredictBot.Interfaces;
+using TgPredictBot.Interfaces;       // Подключаем интерфейс!
+using TgPredictBot.CommandHandlers; // Подключаем обработчики!
 
-namespace TgPredictBot.ComnmandHandlers
+namespace TgPredictBot
 {
     public class CommandHandler
     {
@@ -13,20 +14,19 @@ namespace TgPredictBot.ComnmandHandlers
 
         public CommandHandler()
         {
-            // Регистрируем доступные команды
             var startCommand = new StartCommand();
             var tarotCommand = new TarotCommand();
 
             _commands = new Dictionary<string, IBotCommand>
-        {
-            { startCommand.Name, startCommand },
-            { tarotCommand.Name, tarotCommand }
-        };
+            {
+                { startCommand.Name, startCommand },
+                { tarotCommand.Name, tarotCommand }
+            };
         }
 
         public async Task ExecuteCommandAsync(ITelegramBotClient botClient, Message message, CancellationToken cancellationToken)
         {
-            string text = message.Text.Split(' ')[0]; // Вычленяем саму команду
+            string text = message.Text!.Split(' ')[0];
 
             if (_commands.TryGetValue(text, out var command))
             {
@@ -34,7 +34,7 @@ namespace TgPredictBot.ComnmandHandlers
             }
             else
             {
-                await botClient.SendMessageAsync(
+                await botClient.SendMessage(
                     chatId: message.Chat.Id,
                     text: "Я пока не знаю такой магии. Используйте /start или /tarot",
                     cancellationToken: cancellationToken

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -6,59 +7,67 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
-class Program
+namespace TgPredictBot
 {
-    private static ITelegramBotClient _botClient;
-    private static CommandHandler _commandHandler;
-
-    static async Task Main(string[] args)
+    class Program
     {
-        // Вставь сюда токен своего бота от @BotFather
-        string botToken = "YOUR_TELEGRAM_BOT_TOKEN";
+        private static TelegramBotClient? _botClient;
+        private static CommandHandler? _commandHandler;
 
-        _botClient = new TelegramBotClient(botToken);
-        _commandHandler = new CommandHandler();
-
-        using var cts = new CancellationTokenSource();
-
-        var receiverOptions = new ReceiverOptions
+        static async Task Main(string[] args)
         {
-            AllowedUpdates = Array.Empty<UpdateType>() // Получать все типы апдейтов
-        };
+            string botToken = "8380018080:AAEfT8pvW6kBl8QXdKo6T02ohqhh-dZ3SM4";
 
-        var me = await _botClient.GetMeAsync();
-        Console.WriteLine($"Бот @{me.Username} успешно запущен в режиме Long Polling!");
+            using (var db = new AppDbContext())
+            {
+                // Этот метод автоматически создаст файл БД и накатит ВСЕ недостающие таблицы
+                // строго по моделям, прописанным в вашем AppDbContext
+                db.Database.Migrate();
+                DbInitializer.Seed(db);
+                Console.WriteLine("База данных успешно инициализирована и наполнена 78 картами!");
+            }
 
-        _botClient.StartReceiving(
-            updateHandler: HandleUpdateAsync,
-            errorHandler: HandlePollingErrorAsync,
-            receiverOptions: receiverOptions,
-            cancellationToken: cts.Token
-        );
+            _botClient = new TelegramBotClient(botToken);
+            _commandHandler = new CommandHandler();
 
-        Console.WriteLine("Нажмите Enter для остановки бота...");
-        Console.ReadLine();
+            using var cts = new CancellationTokenSource();
 
-        // Останавливаем бота
-        cts.Cancel();
-    }
+            var receiverOptions = new ReceiverOptions
+            {
+                AllowedUpdates = Array.Empty<UpdateType>()
+            };
 
-    private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-    {
-        // Обрабатываем только текстовые сообщения
-        if (update.Message is not { Text: { } messageText } message)
-            return;
+            var me = await _botClient.GetMe(cancellationToken: cts.Token);
+            Console.WriteLine($"Бот @{me.Username} успешно запущен!");
 
-        long chatId = message.Chat.Id;
-        Console.WriteLine($"Получено сообщение '{messageText}' в чате {chatId}.");
+            _botClient.StartReceiving(
+                updateHandler: HandleUpdateAsync,
+                errorHandler: HandlePollingErrorAsync,
+                receiverOptions: receiverOptions,
+                cancellationToken: cts.Token
+            );
 
-        // Передаем обработку хендлеру команд
-        await _commandHandler.ExecuteCommandAsync(botClient, message, cancellationToken);
-    }
+            Console.WriteLine("Нажмите Enter для остановки бота...");
+            Console.ReadLine();
 
-    private static Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
-    {
-        Console.WriteLine($"Ошибка во время пуллинга: {exception.Message}");
-        return Task.CompletedTask;
+            cts.Cancel();
+        }
+
+        private static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            if (update.Message is not { Text: { } messageText } message)
+                return;
+
+            if (_commandHandler != null)
+            {
+                await _commandHandler.ExecuteCommandAsync(botClient, message, cancellationToken);
+            }
+        }
+
+        private static Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"Ошибка: {exception.Message}");
+            return Task.CompletedTask;
+        }
     }
 }

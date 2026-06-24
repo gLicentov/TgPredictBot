@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../TgPredictBot.Tests/TgPredictBot.Tests.csproj" Id="71c12289-7f8f-40f8-ba15-f12a8db8d383" />
   <Project Path="TgPredictBot.csproj" />
 </Solution>
